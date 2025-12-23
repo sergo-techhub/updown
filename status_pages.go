@@ -3,6 +3,7 @@ package updown
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // StatusPage represents a status page
@@ -41,7 +42,11 @@ type removeStatusPageResponse struct {
 
 // List lists all status pages
 func (s *StatusPageService) List() ([]StatusPage, *http.Response, error) {
-	req, err := s.client.NewRequest("GET", "status_pages", nil)
+	path := "status_pages"
+	if s.client.SkipCache {
+		path = fmt.Sprintf("%s?_=%d", path, time.Now().UnixNano())
+	}
+	req, err := s.client.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

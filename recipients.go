@@ -3,6 +3,7 @@ package updown
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // RecipientType represents the type of a recipient
@@ -39,7 +40,11 @@ type RecipientService struct {
 
 // List lists all recipients
 func (s *RecipientService) List() ([]Recipient, *http.Response, error) {
-	req, err := s.client.NewRequest("GET", "recipients", nil)
+	path := "recipients"
+	if s.client.SkipCache {
+		path = fmt.Sprintf("%s?_=%d", path, time.Now().UnixNano())
+	}
+	req, err := s.client.NewRequest("GET", path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

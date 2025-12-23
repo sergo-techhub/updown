@@ -45,6 +45,10 @@ type Client struct {
 	// APIKey to use for the API
 	APIKey string
 
+	// SkipCache adds a cache-busting parameter to GET requests
+	// to bypass the API's 30-second cache
+	SkipCache bool
+
 	// Services used for communications with the API
 	Check      CheckService
 	Downtime   DowntimeService

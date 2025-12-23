@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // SSL represents the SSL section of a check
@@ -134,7 +135,11 @@ func (s *CheckService) List() ([]Check, *http.Response, error) {
 
 // Get gets a single check by its token
 func (s *CheckService) Get(token string) (Check, *http.Response, error) {
-	req, err := s.client.NewRequest("GET", pathForToken(token), nil)
+	path := pathForToken(token)
+	if s.client.SkipCache {
+		path = fmt.Sprintf("%s?_=%d", path, time.Now().UnixNano())
+	}
+	req, err := s.client.NewRequest("GET", path, nil)
 	if err != nil {
 		return Check{}, nil, err
 	}
