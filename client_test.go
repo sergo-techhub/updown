@@ -11,6 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	// Test URLs/hosts
+	testHTTPURL    = "https://example.com"
+	testHTTPURLAlt = "https://google.fr"
+	testHTTPURLUpd = "https://google.com"
+	testICMPHost   = "8.8.8.8"
+	testTCPHost    = "tcp://google.com:443"
+)
+
 func newClient() *Client {
 	apiKey := os.Getenv("UPDOWN_API_KEY")
 	if apiKey == "" {
@@ -22,7 +31,7 @@ func newClient() *Client {
 // createTestCheck creates a check for testing and returns its token
 func createTestCheck(t *testing.T, client *Client) string {
 	res, resp, err := client.Check.Add(CheckItem{
-		URL:   "https://example.com",
+		URL:   testHTTPURL,
 		Alias: "Test Check",
 	})
 	require.NoError(t, err)
@@ -114,16 +123,16 @@ func TestAddUpdateRemoveCheck(t *testing.T) {
 	client := newClient()
 
 	// Add
-	res, resp, err := client.Check.Add(CheckItem{URL: "https://google.fr"})
+	res, resp, err := client.Check.Add(CheckItem{URL: testHTTPURLAlt})
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
-	assert.Equal(t, "https://google.fr", res.URL)
+	assert.Equal(t, testHTTPURLAlt, res.URL)
 
 	// Update
-	res, resp, err = client.Check.Update(res.Token, CheckItem{URL: "https://google.com"})
+	res, resp, err = client.Check.Update(res.Token, CheckItem{URL: testHTTPURLUpd})
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "https://google.com", res.URL)
+	assert.Equal(t, testHTTPURLUpd, res.URL)
 
 	// Remove
 	result, resp, err := client.Check.Remove(res.Token)
@@ -132,17 +141,33 @@ func TestAddUpdateRemoveCheck(t *testing.T) {
 	assert.True(t, result)
 }
 
-func TestAddCheckWithType(t *testing.T) {
+func TestAddICMPCheck(t *testing.T) {
 	client := newClient()
 
 	// Test ICMP check
 	res, resp, err := client.Check.Add(CheckItem{
-		URL:  "8.8.8.8",
+		URL:  testICMPHost,
 		Type: "icmp",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.Equal(t, "icmp", res.Type)
+
+	// Clean up
+	_, _, _ = client.Check.Remove(res.Token)
+}
+
+func TestAddTCPCheck(t *testing.T) {
+	client := newClient()
+
+	// Test TCP check
+	res, resp, err := client.Check.Add(CheckItem{
+		URL:  testTCPHost,
+		Type: "tcp",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Equal(t, "tcp", res.Type)
 
 	// Clean up
 	_, _, _ = client.Check.Remove(res.Token)
@@ -159,9 +184,8 @@ func TestListMetrics(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	now := time.Now()
-	timeFormat := "2006-01-02 15:04:05 -0700"
-	from, to := now.AddDate(0, 0, -1).Format(timeFormat), now.Format(timeFormat)
-	metricRes, resp, err := client.Metric.List(token, "host", from, to)
+	from, to := now.AddDate(0, 0, -1).Format("2006-01-02"), now.Format("2006-01-02")
+	metricRes, resp, err := client.Metric.List(token, "time", from, to)
 
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
