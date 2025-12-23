@@ -16,6 +16,7 @@ type SSL struct {
 // Check represents a check performed by Updown on a regular basis
 type Check struct {
 	Token             string            `json:"token,omitempty"`
+	Type              string            `json:"type,omitempty"`
 	URL               string            `json:"url,omitempty"`
 	Alias             string            `json:"alias,omitempty"`
 	LastStatus        int               `json:"last_status,omitempty"`
@@ -35,15 +36,20 @@ type Check struct {
 	MuteUntil         string            `json:"mute_until,omitempty"`
 	DisabledLocations []string          `json:"disabled_locations,omitempty"`
 	CustomHeaders     map[string]string `json:"custom_headers,omitempty"`
+	HttpVerb          string            `json:"http_verb,omitempty"`
+	HttpBody          string            `json:"http_body,omitempty"`
+	RecipientIDs      []string          `json:"recipients,omitempty"`
 }
 
 // CheckItem represents a new check you want to be performed by Updown
 type CheckItem struct {
+	// The type of check (http, https, icmp, tcp, tcps)
+	Type string `json:"type,omitempty"`
 	// The URL you want to monitor
 	URL string `json:"url,omitempty"`
-	// Interval in seconds (30, 60, 120, 300 or 600)
+	// Interval in seconds (15, 30, 60, 120, 300, 600, 1800 or 3600)
 	Period int `json:"period,omitempty"`
-	// APDEX threshold in seconds (0.125, 0.25, 0.5 or 1.0)
+	// APDEX threshold in seconds (0.125, 0.25, 0.5, 1.0, 2.0, 4.0 or 8.0)
 	Apdex float64 `json:"apdex_t,omitempty"`
 	// Is the check enabled
 	Enabled bool `json:"enabled"`
@@ -59,6 +65,12 @@ type CheckItem struct {
 	DisabledLocations []string `json:"disabled_locations,omitempty"`
 	// The HTTP headers you want in updown requests
 	CustomHeaders map[string]string `json:"custom_headers,omitempty"`
+	// HTTP verb (GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS)
+	HttpVerb string `json:"http_verb,omitempty"`
+	// HTTP body for POST/PUT/PATCH requests
+	HttpBody string `json:"http_body,omitempty"`
+	// IDs of the recipients related to the check
+	RecipientIDs []string `json:"recipients,omitempty"`
 }
 
 // CheckService interacts with the checks section of the API

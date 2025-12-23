@@ -46,11 +46,12 @@ type Client struct {
 	APIKey string
 
 	// Services used for communications with the API
-	Check    CheckService
-	Downtime DowntimeService
-	Metric   MetricService
-	Node     NodeService
-	Webhook  WebhookService
+	Check     CheckService
+	Downtime  DowntimeService
+	Metric    MetricService
+	Node      NodeService
+	Webhook   WebhookService
+	Recipient RecipientService
 }
 
 // NewClient returns a new API client.
@@ -72,6 +73,7 @@ func NewClient(apiKey string, httpClient *http.Client) *Client {
 	c.Metric = MetricService{client: c}
 	c.Node = NodeService{client: c}
 	c.Webhook = WebhookService{client: c}
+	c.Recipient = RecipientService{client: c}
 
 	return c
 }
@@ -155,9 +157,11 @@ func CheckResponse(r *http.Response) error {
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
 	if err == nil && len(data) > 0 {
-		err := json.Unmarshal(data, errorResponse)
-		if err != nil {
-			return err
+		// Try to unmarshal into ErrorResponse first
+		_ = json.Unmarshal(data, errorResponse)
+		// If Message is still empty, use the raw response body
+		if errorResponse.Message == "" {
+			errorResponse.Message = string(data)
 		}
 	}
 
