@@ -1,6 +1,7 @@
 package updown
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -47,9 +48,23 @@ func deleteTestCheck(t *testing.T, client *Client, token string) {
 func TestTokenForAlias(t *testing.T) {
 	client := newClient()
 
-	// Create a test check
-	token := createTestCheck(t, client)
+	// Use unique alias to avoid conflicts with pre-existing checks
+	uniqueAlias := fmt.Sprintf("Test Check %d", time.Now().UnixNano())
+
+	// Create a test check with unique alias
+	res, resp, err := client.Check.Add(CheckItem{
+		URL:   testHTTPURL,
+		Alias: uniqueAlias,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	token := res.Token
 	defer deleteTestCheck(t, client, token)
+
+	// Verify check was created by getting it directly
+	check, _, err := client.Check.Get(token)
+	require.NoError(t, err)
+	require.Equal(t, uniqueAlias, check.Alias)
 
 	// Cache miss + alias not found
 	foundToken, err := client.Check.TokenForAlias("nonexistent-alias-12345")
@@ -57,12 +72,12 @@ func TestTokenForAlias(t *testing.T) {
 	assert.Equal(t, ErrTokenNotFound, err)
 
 	// Cache miss + match found after request
-	foundToken, err = client.Check.TokenForAlias("Test Check")
+	foundToken, err = client.Check.TokenForAlias(uniqueAlias)
 	assert.Nil(t, err)
 	assert.Equal(t, token, foundToken)
 
 	// Cache hit
-	foundToken, err = client.Check.TokenForAlias("Test Check")
+	foundToken, err = client.Check.TokenForAlias(uniqueAlias)
 	assert.Nil(t, err)
 	assert.Equal(t, token, foundToken)
 }
