@@ -9,13 +9,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container:
+      image: golang:1.25-alpine
     steps:
-      - uses: actions/checkout@v4
+      - name: Install Git
+        run: apk add --no-cache git
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
+      - uses: actions/checkout@v4
 
       - name: Format Check
         run: |
