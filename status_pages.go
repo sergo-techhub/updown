@@ -55,20 +55,22 @@ func (s *StatusPageService) List() ([]StatusPage, *http.Response, error) {
 	return res, resp, err
 }
 
-// Get gets a single status page by its token
+// Get gets a single status page by its token from the list
 func (s *StatusPageService) Get(token string) (StatusPage, *http.Response, error) {
-	req, err := s.client.NewRequest("GET", pathForStatusPageToken(token), nil)
-	if err != nil {
-		return StatusPage{}, nil, err
-	}
-
-	var res StatusPage
-	resp, err := s.client.Do(req, &res)
+	// The API doesn't have a GET /status_pages/:token endpoint
+	// We need to list all and find the matching one
+	pages, resp, err := s.List()
 	if err != nil {
 		return StatusPage{}, resp, err
 	}
 
-	return res, resp, err
+	for _, page := range pages {
+		if page.Token == token {
+			return page, resp, nil
+		}
+	}
+
+	return StatusPage{}, resp, fmt.Errorf("status page with token %s not found", token)
 }
 
 // Add creates a new status page
