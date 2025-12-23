@@ -46,12 +46,13 @@ type Client struct {
 	APIKey string
 
 	// Services used for communications with the API
-	Check     CheckService
-	Downtime  DowntimeService
-	Metric    MetricService
-	Node      NodeService
-	Webhook   WebhookService
-	Recipient RecipientService
+	Check      CheckService
+	Downtime   DowntimeService
+	Metric     MetricService
+	Node       NodeService
+	Webhook    WebhookService
+	Recipient  RecipientService
+	StatusPage StatusPageService
 }
 
 // NewClient returns a new API client.
@@ -74,6 +75,7 @@ func NewClient(apiKey string, httpClient *http.Client) *Client {
 	c.Node = NodeService{client: c}
 	c.Webhook = WebhookService{client: c}
 	c.Recipient = RecipientService{client: c}
+	c.StatusPage = StatusPageService{client: c}
 
 	return c
 }

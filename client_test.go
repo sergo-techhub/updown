@@ -239,3 +239,125 @@ func isIPv4(ip net.IP) bool {
 func isIPv6(ip net.IP) bool {
 	return ip.To4() == nil && ip.To16() != nil
 }
+
+func TestListRecipients(t *testing.T) {
+	client := newClient()
+	recipients, resp, err := client.Recipient.List()
+
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// May have zero or more recipients
+	assert.NotNil(t, recipients)
+}
+
+func TestAddRemoveRecipient(t *testing.T) {
+	client := newClient()
+
+	// Add email recipient
+	res, resp, err := client.Recipient.Add(RecipientItem{
+		Type:  RecipientTypeEmail,
+		Value: "test@example.com",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Equal(t, RecipientTypeEmail, res.Type)
+	assert.NotEmpty(t, res.ID)
+
+	// Remove recipient
+	result, resp, err := client.Recipient.Remove(res.ID)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.True(t, result)
+}
+
+func TestAddWebhookRecipient(t *testing.T) {
+	client := newClient()
+
+	// Add webhook recipient
+	res, resp, err := client.Recipient.Add(RecipientItem{
+		Type:  RecipientTypeWebhook,
+		Value: "https://example.com/webhook",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Equal(t, RecipientTypeWebhook, res.Type)
+
+	// Clean up
+	_, _, _ = client.Recipient.Remove(res.ID)
+}
+
+func TestListStatusPages(t *testing.T) {
+	client := newClient()
+	pages, resp, err := client.StatusPage.List()
+
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// May have zero or more status pages
+	assert.NotNil(t, pages)
+}
+
+func TestAddUpdateRemoveStatusPage(t *testing.T) {
+	client := newClient()
+
+	// Create a test check for the status page
+	token := createTestCheck(t, client)
+	defer deleteTestCheck(t, client, token)
+
+	// Add status page
+	res, resp, err := client.StatusPage.Add(StatusPageItem{
+		Name:       "Test Status Page",
+		Visibility: "private",
+		Checks:     []string{token},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Equal(t, "Test Status Page", res.Name)
+	assert.Equal(t, "private", res.Visibility)
+	assert.NotEmpty(t, res.Token)
+
+	// Get status page
+	page, resp, err := client.StatusPage.Get(res.Token)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, res.Token, page.Token)
+	assert.Equal(t, "Test Status Page", page.Name)
+
+	// Update status page
+	updated, resp, err := client.StatusPage.Update(res.Token, StatusPageItem{
+		Name:       "Updated Status Page",
+		Visibility: "private",
+		Checks:     []string{token},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "Updated Status Page", updated.Name)
+
+	// Remove status page
+	result, resp, err := client.StatusPage.Remove(res.Token)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.True(t, result)
+}
+
+func TestStatusPageProtected(t *testing.T) {
+	client := newClient()
+
+	// Create a test check
+	token := createTestCheck(t, client)
+	defer deleteTestCheck(t, client, token)
+
+	// Add protected status page with custom access key
+	res, resp, err := client.StatusPage.Add(StatusPageItem{
+		Name:       "Protected Page",
+		Visibility: "protected",
+		AccessKey:  "test-access-key-123",
+		Checks:     []string{token},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Equal(t, "protected", res.Visibility)
+	assert.Equal(t, "test-access-key-123", res.AccessKey)
+
+	// Clean up
+	_, _, _ = client.StatusPage.Remove(res.Token)
+}
