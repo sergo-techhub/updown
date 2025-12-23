@@ -1,9 +1,13 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v0.2.1)'
+        required: true
+        type: string
   push:
-    branches:
-      - main
     tags:
       - 'v*'
 
@@ -27,13 +31,11 @@ jobs:
       - name: Configure Git
         run: git config --global --add safe.directory /__w/updown/updown
 
-      - name: Create version tag
-        if: github.ref == 'refs/heads/main'
+      - name: Create release tag
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          COUNT=$(git rev-list --count HEAD)
-          VERSION="v0.2.${COUNT}"
-          git tag $VERSION
-          echo "Created tag: $VERSION"
+          git tag ${{ inputs.version }}
+          echo "Created tag: ${{ inputs.version }}"
 
       - name: Run tests
         env:
